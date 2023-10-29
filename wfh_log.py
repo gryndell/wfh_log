@@ -190,8 +190,8 @@ class App(tk.Tk):
             for cell in cells:
                 cell.alignment = hAlign
         for row in rows:
-            start_time = (row[1] / 86400) + 25569.0
-            finish_time = (row[2] / 86400) + 25569.0
+            start_time = datetime.fromtimestamp(row[1])
+            finish_time = datetime.fromtimestamp(row[2])
             sheet.cell(rowNumber + 2, 1).value = start_time
             sheet.cell(rowNumber + 2, 1).number_format = 'yyyy-mm-dd'
             sheet.cell(rowNumber + 2, 2).value = start_time
@@ -281,7 +281,7 @@ class App(tk.Tk):
             column=0,
             row=1,
             rowspan=10,
-            columnspan=6,
+            columnspan=7,
             sticky='nsew'
         )
         wfh_log.column('#1', width=80, anchor='w')
