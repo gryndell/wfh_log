@@ -1,0 +1,96 @@
+#!/bin/bash
+# wfh_log - Run a Query on the wfh_log.sqlite database
+# Usage: wfh_log
+# For debugging, uncomment the following line
+# set -euxo pipefail
+# todo:
+
+cd $HOME
+
+# Run a query on the wfh_log.sqlite database
+function get_last_ten ()
+{
+  MAXID=$(sqlite3 $HOME/wfh_log.sqlite "SELECT MAX(id) FROM wfh_log;" \
+    2>/dev/null)
+  RATEQUERY="SELECT rate FROM wfh_rate ORDER BY start_date DESC LIMIT 1;"
+  RATE=$(sqlite3 $HOME/wfh_log.sqlite "$RATEQUERY" 2>/dev/null)
+  QUERY="SELECT datetime(start_time, 'auto', 'localtime') as 'Start', "
+  QUERY="$QUERY datetime(finish_time, 'auto', 'localtime')"
+  QUERY="$QUERY as 'Finish', "
+  QUERY="$QUERY ((finish_time - start_time) / 3600.0) as 'Hours', "
+  QUERY="$QUERY ($RATE * (finish_time - start_time) / 3600.0)"
+  QUERY="$QUERY as 'Amount', "
+  QUERY="$QUERY reason as 'Reason' FROM wfh_log WHERE id >"
+  QUERY="$QUERY ((SELECT MAX(id) FROM wfh_log) - 10)"
+  QUERY="$QUERY ORDER BY id LIMIT 10";
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" -markdown 2>/dev/null)
+  echo "$RESULT"
+}
+
+function start_log() {
+  QUERY="SELECT (id) FROM wfh_log WHERE finish_time IS NULL LIMIT 1;"
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  if [ "$RESULT" == "" ]; then
+    read -p "Enter a reason: " REASON
+    STARTTIME=$(date +%s)
+    # Round to the nearest 15 minutes
+    STARTTIME=$(echo "$STARTTIME / 900 * 900" | bc)
+    QUERY="INSERT INTO wfh_log (id, start_time, finish_time, reason) "
+    QUERY="$QUERY VALUES (($MAXID + 1), $STARTTIME, NULL, '$REASON');"
+    RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  else
+    echo "Log already in progress"
+    sleep 1
+    return
+  fi
+}
+
+function finish_log() {
+  QUERY="SELECT (id) FROM wfh_log WHERE finish_time IS NULL LIMIT 1;"
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  if [ "$RESULT" == "" ]; then
+    echo "No log to finish"
+    sleep 1
+    return
+  fi
+  read -p "Enter a reason: " REASON
+  FINISHTIME=$(date +%s)
+  # Round to the nearest 15 minutes
+  FINISHTIME=$(echo "$FINISHTIME / 900 * 900" | bc)
+  QUERY="UPDATE wfh_log SET finish_time = $FINISHTIME, reason = '$REASON' "
+  QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+}
+
+# Loop until the user quits
+while true; do
+  clear
+  get_last_ten
+  echo ""
+  echo "S. Start a new log"
+  echo "F. Finish the current log"
+  echo "D. Delete the latest log entry"
+  echo "Q. Quit"
+  echo ""
+
+  read -p "Choice: " CHOICE
+  case $CHOICE in
+    q|Q)
+      break
+    ;;
+    s|S)
+      start_log
+    ;;
+    f|F)
+      finish_log
+    ;;
+    d|D)
+      QUERY="DELETE FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
+      RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+    ;;
+    *)
+      echo "Invalid choice"
+      sleep 1
+    ;;
+  esac
+done
