@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import tkinter as tk
 import os
 import sqlite3
@@ -94,6 +95,7 @@ class App(tk.Tk):
                 text="1",
                 values=value_list
             )
+        # End of show_log
 
     def start_log(self, tv, start, reason):
         # If there is a job in progress, don't start a new one
@@ -131,6 +133,7 @@ class App(tk.Tk):
             print("Error: {}".format(str(e)))
             return
         self.show_log(tv)
+        # End of start_log
 
     def finish_log(self, tv, finish, reason):
         # If there is no job in progress, don't finish
@@ -152,6 +155,7 @@ class App(tk.Tk):
         # Set the current job to 0
         self.current_job = 0
         self.show_log(tv)
+        # End of finish_log
 
     def export_log(self):
         # Get all the records from the log
@@ -223,6 +227,7 @@ class App(tk.Tk):
             'Export',
             'Log Exported to {}'.format(xlFile)
         )
+        # End of export_log
 
     def delete_log(self, tv):
         # Find the last job in the log
@@ -245,6 +250,7 @@ class App(tk.Tk):
             return
         self.current_job = 0
         self.show_log(tv)
+        # End of delete_log
 
     def __init__(self):
         super().__init__()
@@ -343,6 +349,7 @@ class App(tk.Tk):
         btnQuit.grid(column=6, row=0, padx=10, pady=10,  sticky='w')
         self.show_log(wfh_log)
         self.mainloop()
+        # End of __init__
 
 
 if __name__ == "__main__":
