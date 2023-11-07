@@ -28,4 +28,11 @@ CREATE TABLE IF NOT EXISTS wfh_rate (
 CREATE UNIQUE INDEX IF NOT EXISTS rate_id ON wfh_rate(id);
 CREATE INDEX IF NOT EXISTS rate_start_date ON wfh_rate(start_date);
 CREATE INDEX IF NOT EXISTS rate_end_date ON wfh_rate(end_date);
-
+CREATE VIEW IF NOT EXISTS view_log AS
+    SELECT datetime(start_time, 'unixepoch', 'localtime') AS 'Start',
+            time(finish_time, 'unixepoch', 'localtime') AS 'Finish',
+            printf('%.2f', (finish_time - start_time) / 3600.0) as 'Hours',
+            reason AS 'Reason'
+    FROM wfh_log WHERE
+    id > ((SELECT max(id) FROM wfh_log) - 10)
+    ORDER BY id;
