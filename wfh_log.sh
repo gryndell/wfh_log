@@ -14,14 +14,7 @@ function get_last_ten ()
     2>/dev/null)
   RATEQUERY="SELECT rate FROM wfh_rate ORDER BY start_date DESC LIMIT 1;"
   RATE=$(sqlite3 $HOME/wfh_log.sqlite "$RATEQUERY" 2>/dev/null)
-  QUERY="SELECT strftime('%Y-%m-%d %H:%M',"
-  QUERY="$QUERY datetime(start_time, 'auto', 'localtime')) as 'Start', "
-  QUERY="$QUERY strftime('%H:%M',"
-  QUERY="$QUERY datetime(finish_time, 'auto', 'localtime')) as 'Finish', "
-  QUERY="$QUERY printf('%.2f', (finish_time - start_time) / 3600.0) as 'Hours', "
-  QUERY="$QUERY reason as 'Reason' FROM wfh_log WHERE id >"
-  QUERY="$QUERY ((SELECT MAX(id) FROM wfh_log) - 10)"
-  QUERY="$QUERY ORDER BY id LIMIT 10";
+  QUERY="SELECT * FROM view_log;"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" -markdown 2>/dev/null)
   echo "$RESULT"
 }
