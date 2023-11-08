@@ -15,7 +15,7 @@ function get_last_ten ()
   RATEQUERY="SELECT rate FROM wfh_rate ORDER BY start_date DESC LIMIT 1;"
   RATE=$(sqlite3 $HOME/wfh_log.sqlite "$RATEQUERY" 2>/dev/null)
   QUERY="SELECT * FROM view_log;"
-  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" -markdown 2>/dev/null)
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" -box 2>/dev/null)
   echo "$RESULT"
 }
 
