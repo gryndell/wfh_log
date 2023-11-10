@@ -26,7 +26,11 @@ function start_log() {
     read -p "Enter a reason: " REASON
     STARTTIME=$(date +%s)
     # Round to the nearest 15 minutes
+    REMAINDER=$(echo "$STARTTIME % 900" | bc)
     STARTTIME=$(echo "$STARTTIME / 900 * 900" | bc)
+    if [[ $REMAINDER -gt 450 ]]; then
+      STARTTIME=$(echo "$STARTTIME + 900" | bc)
+    fi
     QUERY="INSERT INTO wfh_log (id, start_time, finish_time, reason) "
     QUERY="$QUERY VALUES (($MAXID + 1), $STARTTIME, NULL, '$REASON');"
     RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
@@ -48,7 +52,11 @@ function finish_log() {
   read -p "Enter a reason: " REASON
   FINISHTIME=$(date +%s)
   # Round to the nearest 15 minutes
+  REMAINDER=$(echo "$FINISHTIME % 900" | bc)
   FINISHTIME=$(echo "$FINISHTIME / 900 * 900" | bc)
+  if [[ $REMAINDER -gt 450 ]]; then
+    FINISHTIME=$(echo "$FINISHTIME + 900" | bc)
+  fi
   QUERY="UPDATE wfh_log SET finish_time = $FINISHTIME, reason = '$REASON' "
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
