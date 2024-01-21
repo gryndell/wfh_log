@@ -47,9 +47,8 @@ function finish_log() {
   if [ "$RESULT" == "" ]; then
     echo "No log to finish"
     sleep 1
-    return
+    return 1
   fi
-  read -p "Enter a reason: " REASON
   FINISHTIME=$(date +%s)
   # Round to the nearest 15 minutes
   REMAINDER=$(echo "$FINISHTIME % 900" | bc)
@@ -57,9 +56,11 @@ function finish_log() {
   if [[ $REMAINDER -gt 450 ]]; then
     FINISHTIME=$(echo "$FINISHTIME + 900" | bc)
   fi
-  QUERY="UPDATE wfh_log SET finish_time = $FINISHTIME, reason = '$REASON' "
+  QUERY="UPDATE wfh_log SET finish_time = $FINISHTIME"
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  echo "Log finished at $(date -d @$FINISHTIME)"
+  return 0
 }
 
 # Loop until the user quits
