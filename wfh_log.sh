@@ -63,6 +63,46 @@ function finish_log() {
   return 0
 }
 
+function modify_start_time() {
+  QUERY="SELECT start_time FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  if [ "$RESULT" == "" ]; then
+    echo "No log to modify"
+    sleep 1
+    return 1
+  fi
+  STARTSTRING=$(date '+%F %H:%M' -d @$RESULT)
+  DATESTR=$(echo $STARTSTRING | cut -d' ' -f1)
+  TIMESTR=$(echo $STARTSTRING | cut -d' ' -f2)
+  read -p "Enter new start time (HH:MM): " REPLY
+  STARTTIME=$(date +%s -d "$DATESTR $REPLY")
+  QUERY="UPDATE wfh_log SET start_time = $STARTTIME"
+  QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  echo "Log started at $(date -d @$STARTTIME)"
+  return 0
+}
+
+function modify_end_time() {
+  QUERY="SELECT finish_time FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  if [ "$RESULT" == "" ]; then
+    echo "No log to modify"
+    sleep 1
+    return 1
+  fi
+  ENDSTRING=$(date '+%F %H:%M' -d @$RESULT)
+  DATESTR=$(echo $ENDSTRING | cut -d' ' -f1)
+  TIMESTR=$(echo $ENDSTRING | cut -d' ' -f2)
+  read -p "Enter new end time (HH:MM): " REPLY
+  ENDTIME=$(date +%s -d "$DATESTR $REPLY")
+  QUERY="UPDATE wfh_log SET finish_time = $ENDTIME"
+  QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
+  RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  echo "Log finished at $(date -d @$ENDTIME)"
+  return 0
+}
+
 # Loop until the user quits
 while true; do
   clear
@@ -71,6 +111,8 @@ while true; do
   echo "S. Start a new log"
   echo "F. Finish the current log"
   echo "D. Delete the latest log entry"
+  echo "M. Modify latest start time"
+  echo "E. Modify latest finish time"
   echo "Q. Quit"
   echo ""
 
@@ -88,6 +130,12 @@ while true; do
     d|D)
       QUERY="DELETE FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
       RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+    ;;
+    m|M)
+      modify_start_time
+    ;;
+    e|E)
+      modify_end_time
     ;;
     *)
       echo "Invalid choice"
