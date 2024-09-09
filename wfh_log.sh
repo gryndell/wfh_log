@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/env bash
 # wfh_log - Run a Query on the wfh_log.sqlite database
 # Usage: wfh_log
 # For debugging, uncomment the following line
