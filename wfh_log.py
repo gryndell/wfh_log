@@ -9,7 +9,6 @@ from openpyxl import styles
 from openpyxl.utils import get_column_letter
 from datetime import datetime
 
-
 class App(tk.Tk):
     rate = 0.0
     current_job = 0
@@ -205,10 +204,10 @@ class App(tk.Tk):
             sheet.cell(rowNumber + 2, 4).value = finish_time
             sheet.cell(rowNumber + 2, 4).number_format = 'hh:mm'
             sheet.cell(rowNumber + 2, 5).value = \
-                (finish_time - start_time) / 3600.0
+                (row[2] - row[1]) / 3600.0
             sheet.cell(rowNumber + 2, 5).number_format = '0.0000'
             sheet.cell(rowNumber + 2, 6).value = \
-                (finish_time - start_time) / 3600.0 * self.rate
+                ((row[2] - row[1]) / 3600.0) * self.rate
             sheet.cell(rowNumber + 2, 6).number_format = '0.0000'
             sheet.cell(rowNumber + 2, 7).value = row[3]
             rowNumber += 1
