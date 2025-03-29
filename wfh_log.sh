@@ -142,4 +142,5 @@ while true; do
       sleep 1
     ;;
   esac
+  exit 0
 done
