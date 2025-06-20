@@ -1,5 +1,5 @@
 #!/bin/env bash
-# wfh_log - Run a Query on the wfh_log.sqlite database
+# wfh_log.sh - Run a Query on the wfh_log.sqlite database
 # Usage: wfh_log
 # For debugging, uncomment the following line
 # set -euxo pipefail
@@ -8,7 +8,7 @@
 cd $HOME
 
 # Run a query on the wfh_log.sqlite database
-function get_last_ten ()
+get_last_ten ()
 {
   MAXID=$(sqlite3 $HOME/wfh_log.sqlite "SELECT MAX(id) FROM wfh_log;" \
     2>/dev/null)
@@ -19,7 +19,7 @@ function get_last_ten ()
   echo "$RESULT"
 }
 
-function start_log() {
+start_log() {
   QUERY="SELECT (id) FROM wfh_log WHERE finish_time IS NULL LIMIT 1;"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
@@ -41,7 +41,7 @@ function start_log() {
   fi
 }
 
-function finish_log() {
+finish_log() {
   QUERY="SELECT (id) FROM wfh_log WHERE finish_time IS NULL LIMIT 1;"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
@@ -63,7 +63,7 @@ function finish_log() {
   return 0
 }
 
-function modify_start_time() {
+modify_start_time() {
   QUERY="SELECT start_time FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
@@ -83,7 +83,7 @@ function modify_start_time() {
   return 0
 }
 
-function modify_end_time() {
+modify_end_time() {
   QUERY="SELECT finish_time FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
@@ -116,7 +116,7 @@ while true; do
   echo "Q. Quit"
   echo ""
 
-  read -p "Choice: " CHOICE
+  read -n1 -s -p "Choice: " CHOICE
   case $CHOICE in
     q|Q)
       break
@@ -142,5 +142,6 @@ while true; do
       sleep 1
     ;;
   esac
-  exit 0
 done
+echo ""
+exit 0
