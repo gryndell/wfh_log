@@ -7,6 +7,10 @@
 
 cd $HOME
 
+RCOL='\e[0m'
+RED='\e[0;31m'
+GRE='\e[0;32m'
+
 # Run a query on the wfh_log.sqlite database
 get_last_ten ()
 {
@@ -22,6 +26,7 @@ get_last_ten ()
 start_log() {
   QUERY="SELECT (id) FROM wfh_log WHERE finish_time IS NULL LIMIT 1;"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
+  echo
   if [ "$RESULT" == "" ]; then
     read -p "Enter a reason: " REASON
     STARTTIME=$(date +%s)
@@ -35,7 +40,7 @@ start_log() {
     QUERY="$QUERY VALUES (($MAXID + 1), $STARTTIME, NULL, '$REASON');"
     RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   else
-    echo "Log already in progress"
+    echo -e "${RED}Log already in progress${RCOL}"
     sleep 1
     return
   fi
@@ -45,7 +50,7 @@ finish_log() {
   QUERY="SELECT (id) FROM wfh_log WHERE finish_time IS NULL LIMIT 1;"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
-    echo "No log to finish"
+    echo -e "${RED}No log to finish${RCOL}"
     sleep 1
     return 1
   fi
@@ -59,7 +64,7 @@ finish_log() {
   QUERY="UPDATE wfh_log SET finish_time = $FINISHTIME"
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
-  echo "Log finished at $(date -d @$FINISHTIME)"
+  echo -e "${GRE}Log finished at $(date -d @$FINISHTIME)${RCOL}"
   return 0
 }
 
@@ -67,7 +72,7 @@ modify_start_time() {
   QUERY="SELECT start_time FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
-    echo "No log to modify"
+    echo -e "${RED}No log to modify${RCOL}"
     sleep 1
     return 1
   fi
@@ -79,7 +84,7 @@ modify_start_time() {
   QUERY="UPDATE wfh_log SET start_time = $STARTTIME"
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
-  echo "Log started at $(date -d @$STARTTIME)"
+  echo -e "${GRE}Log started at $(date -d @$STARTTIME)${RCOL}"
   return 0
 }
 
@@ -87,7 +92,7 @@ modify_end_time() {
   QUERY="SELECT finish_time FROM wfh_log WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
-    echo "No log to modify"
+    echo -e "${RED}No log to modify${RCOL}"
     sleep 1
     return 1
   fi
@@ -99,8 +104,28 @@ modify_end_time() {
   QUERY="UPDATE wfh_log SET finish_time = $ENDTIME"
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
-  echo "Log finished at $(date -d @$ENDTIME)"
+  echo -e "${GRE}Log finished at $(date -d @$ENDTIME)${RCOL}"
   return 0
+}
+
+export_to_csv() {
+  # Get the starting and ending date for previous fiscal year
+  STARTYEAR=$(echo -e "$(date +%Y) - 1" | bc)
+  STARTDATE=$(date -d "$STARTYEAR-07-01" +%s)
+  ENDYEAR=$(echo -e "$(date +%Y)")
+  ENDDATE=$(date -d "$ENDYEAR-06-30" +%s)
+  OUTFILE="$STARTYEAR-$ENDYEAR.csv"
+        QUERY="SELECT date(start_time, 'unixepoch', 'localtime') AS 'Date', "
+        QUERY="$QUERY strftime('%H:%M', start_time, 'unixepoch', 'localtime') AS 'Start', "
+        QUERY="$QUERY strftime('%H:%M', finish_time, 'unixepoch', 'localtime') AS 'Finish', "
+        QUERY="$QUERY printf('%.2f', (finish_time - start_time) / 3600.0) AS 'Hours', "
+        QUERY="$QUERY reason AS 'Reason' "
+        QUERY="$QUERY FROM wfh_log WHERE start_time >= $STARTDATE AND "
+        QUERY="$QUERY finish_time <= $ENDDATE ORDER BY id;"
+  RESULT=$(sqlite3 -csv -header $HOME/wfh_log.sqlite "$QUERY" > $HOME/$OUTFILE 2>/dev/null)
+  echo $RESULT
+  echo -e "${GRE}Exported data to $OUTFILE${RCOL}"
+  read -n1 -p "Press any key to continue"
 }
 
 # Loop until the user quits
@@ -113,6 +138,7 @@ while true; do
   echo "D. Delete the latest log entry"
   echo "M. Modify latest start time"
   echo "E. Modify latest finish time"
+  echo "X. Export Previous Fiscal Year to CSV"
   echo "Q. Quit"
   echo ""
 
@@ -122,9 +148,11 @@ while true; do
       break
     ;;
     s|S)
+      echo ""
       start_log
     ;;
     f|F)
+      echo ""
       finish_log
     ;;
     d|D)
@@ -132,13 +160,19 @@ while true; do
       RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
     ;;
     m|M)
+      echo ""
       modify_start_time
     ;;
     e|E)
+      echo ""
       modify_end_time
     ;;
+    x|X)
+      echo ""
+      export_to_csv
+    ;;
     *)
-      echo "Invalid choice"
+      echo -e "${RED}Invalid choice${RCOL}"
       sleep 1
     ;;
   esac
