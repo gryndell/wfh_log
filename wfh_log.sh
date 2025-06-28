@@ -10,6 +10,8 @@ cd $HOME
 RCOL='\e[0m'
 RED='\e[0;31m'
 GRE='\e[0;32m'
+YEL='\e[1;33m'
+BLU='\e[1;34m'
 
 # Run a query on the wfh_log.sqlite database
 get_last_ten ()
@@ -20,13 +22,13 @@ get_last_ten ()
   RATE=$(sqlite3 $HOME/wfh_log.sqlite "$RATEQUERY" 2>/dev/null)
   QUERY="SELECT * FROM view_log;"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" -box 2>/dev/null)
-  echo "$RESULT"
+  echo -e "${BLU}$RESULT${RCOL}"
 }
 
 start_log() {
   QUERY="SELECT (id) FROM wfh_log WHERE finish_time IS NULL LIMIT 1;"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
-  echo
+  echo ""
   if [ "$RESULT" == "" ]; then
     read -p "Enter a reason: " REASON
     STARTTIME=$(date +%s)
@@ -41,7 +43,7 @@ start_log() {
     RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   else
     echo -e "${RED}Log already in progress${RCOL}"
-    echo -n1 -s -p "Press any key to continue"
+    read -n1 -s -p "Press any key to continue"
     return
   fi
 }
@@ -51,7 +53,7 @@ finish_log() {
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
     echo -e "${RED}No log to finish${RCOL}"
-    echo -n1 -s -p "Press any key to continue"
+    read -n1 -s -p "Press any key to continue"
     return 1
   fi
   FINISHTIME=$(date +%s)
@@ -65,7 +67,7 @@ finish_log() {
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   echo -e "${GRE}Log finished at $(date -d @$FINISHTIME)${RCOL}"
-  echo -n1 -s -p "Press any key to continue"
+  read -n1 -s -p "Press any key to continue"
   return 0
 }
 
@@ -74,7 +76,7 @@ modify_start_time() {
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
     echo -e "${RED}No log to modify${RCOL}"
-    echo -n1 -s -p "Press any key to continue"
+    read -n1 -s -p "Press any key to continue"
     return 1
   fi
   STARTSTRING=$(date '+%F %H:%M' -d @$RESULT)
@@ -86,7 +88,7 @@ modify_start_time() {
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   echo -e "${GRE}Log started at $(date -d @$STARTTIME)${RCOL}"
-  echo -n1 -s -p "Press any key to continue"
+  read -n1 -s -p "Press any key to continue"
   return 0
 }
 
@@ -95,7 +97,7 @@ modify_end_time() {
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
     echo -e "${RED}No log to modify${RCOL}"
-    echo -n1 -s -p "Press any key to continue"
+    read -n1 -s -p "Press any key to continue"
     return 1
   fi
   ENDSTRING=$(date '+%F %H:%M' -d @$RESULT)
@@ -107,7 +109,7 @@ modify_end_time() {
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   echo -e "${GRE}Log finished at $(date -d @$ENDTIME)${RCOL}"
-  echo -n1 -s -p "Press any key to continue"
+  read -n1 -s -p "Press any key to continue"
   return 0
 }
 
@@ -144,7 +146,7 @@ export_data() {
 while true; do
   clear
   get_last_ten
-  echo ""
+  echo -e "${YEL}"
   echo "S. Start a new log"
   echo "F. Finish the current log"
   echo "D. Delete the latest log entry"
@@ -152,7 +154,7 @@ while true; do
   echo "E. Modify latest finish time"
   echo "X. Export Previous Fiscal Year to CSV"
   echo "Q. Quit"
-  echo ""
+  echo -e "${RCOL}"
 
   read -n1 -s -p "Choice: " CHOICE
   case $CHOICE in
@@ -185,7 +187,7 @@ while true; do
     ;;
     *)
       echo -e "${RED}Invalid choice${RCOL}"
-      echo -n1 -s -p "Press any key to continue"
+      read -n1 -s -p "Press any key to continue"
     ;;
   esac
 done
