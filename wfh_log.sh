@@ -41,7 +41,7 @@ start_log() {
     RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   else
     echo -e "${RED}Log already in progress${RCOL}"
-    sleep 1
+    echo -n1 -s -p "Press any key to continue"
     return
   fi
 }
@@ -51,7 +51,7 @@ finish_log() {
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
     echo -e "${RED}No log to finish${RCOL}"
-    sleep 1
+    echo -n1 -s -p "Press any key to continue"
     return 1
   fi
   FINISHTIME=$(date +%s)
@@ -65,6 +65,7 @@ finish_log() {
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   echo -e "${GRE}Log finished at $(date -d @$FINISHTIME)${RCOL}"
+  echo -n1 -s -p "Press any key to continue"
   return 0
 }
 
@@ -73,7 +74,7 @@ modify_start_time() {
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
     echo -e "${RED}No log to modify${RCOL}"
-    sleep 1
+    echo -n1 -s -p "Press any key to continue"
     return 1
   fi
   STARTSTRING=$(date '+%F %H:%M' -d @$RESULT)
@@ -85,6 +86,7 @@ modify_start_time() {
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   echo -e "${GRE}Log started at $(date -d @$STARTTIME)${RCOL}"
+  echo -n1 -s -p "Press any key to continue"
   return 0
 }
 
@@ -93,7 +95,7 @@ modify_end_time() {
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   if [ "$RESULT" == "" ]; then
     echo -e "${RED}No log to modify${RCOL}"
-    sleep 1
+    echo -n1 -s -p "Press any key to continue"
     return 1
   fi
   ENDSTRING=$(date '+%F %H:%M' -d @$RESULT)
@@ -105,27 +107,37 @@ modify_end_time() {
   QUERY="$QUERY WHERE id = (SELECT MAX(id) FROM wfh_log);"
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   echo -e "${GRE}Log finished at $(date -d @$ENDTIME)${RCOL}"
+  echo -n1 -s -p "Press any key to continue"
   return 0
 }
 
-export_to_csv() {
+export_data() {
+  # Check if ssconvert is available
+  if ! SSCONVERT=$(type -P ssconvert) 2>/dev/null; then
+    echo -e "${RED}ssconvert is not available. Please install Gnumeric to export data to Excel.${RCOL}"
+    read -n1 -s -p "Press any key to continue"
+    return 1
+  fi
   # Get the starting and ending date for previous fiscal year
   STARTYEAR=$(echo -e "$(date +%Y) - 1" | bc)
-  STARTDATE=$(date -d "$STARTYEAR-07-01" +%s)
+  STARTDATE=$(date -d "$STARTYEAR-07-01" +%F)
+  read -e -i "$STARTDATE" -p "Enter the Starting Date for export: " STARTDATE
+  STARTDATE=$(date -d "$STARTDATE" +%s)
   ENDYEAR=$(echo -e "$(date +%Y)")
-  ENDDATE=$(date -d "$ENDYEAR-06-30" +%s)
-  OUTFILE="$STARTYEAR-$ENDYEAR.csv"
-        QUERY="SELECT date(start_time, 'unixepoch', 'localtime') AS 'Date', "
-        QUERY="$QUERY strftime('%H:%M', start_time, 'unixepoch', 'localtime') AS 'Start', "
-        QUERY="$QUERY strftime('%H:%M', finish_time, 'unixepoch', 'localtime') AS 'Finish', "
-        QUERY="$QUERY printf('%.2f', (finish_time - start_time) / 3600.0) AS 'Hours', "
-        QUERY="$QUERY reason AS 'Reason' "
-        QUERY="$QUERY FROM wfh_log WHERE start_time >= $STARTDATE AND "
-        QUERY="$QUERY finish_time <= $ENDDATE ORDER BY id;"
-  RESULT=$(sqlite3 -csv -header $HOME/wfh_log.sqlite "$QUERY" > $HOME/$OUTFILE 2>/dev/null)
-  echo $RESULT
+  ENDDATE=$(date -d "$ENDYEAR-06-30" +%F)
+  read -e -i "$ENDDATE" -p "Enter the Ending Date for export: " ENDDATE
+  ENDDATE=$(date -d "$ENDDATE" +%s)
+  OUTFILE="WFH-$ENDYEAR.xlsx"
+  QUERY="SELECT date(start_time, 'unixepoch', 'localtime') AS 'Date', "
+  QUERY="$QUERY strftime('%H:%M', start_time, 'unixepoch', 'localtime') AS 'Start', "
+  QUERY="$QUERY strftime('%H:%M', finish_time, 'unixepoch', 'localtime') AS 'Finish', "
+  QUERY="$QUERY printf('%.2f', (finish_time - start_time) / 3600.0) AS 'Hours', "
+  QUERY="$QUERY reason AS 'Reason' "
+  QUERY="$QUERY FROM wfh_log WHERE start_time >= $STARTDATE AND "
+  QUERY="$QUERY finish_time <= $ENDDATE ORDER BY id;"
+  RESULT=$(sqlite3 -csv -header $HOME/wfh_log.sqlite "$QUERY" | $SSCONVERT -T Gnumeric_Excel:xlsx fd://0 $HOME/$OUTFILE 2>/dev/null)
   echo -e "${GRE}Exported data to $OUTFILE${RCOL}"
-  read -n1 -p "Press any key to continue"
+  read -n1 -s -p "Press any key to continue"
 }
 
 # Loop until the user quits
@@ -169,11 +181,11 @@ while true; do
     ;;
     x|X)
       echo ""
-      export_to_csv
+      export_data
     ;;
     *)
       echo -e "${RED}Invalid choice${RCOL}"
-      sleep 1
+      echo -n1 -s -p "Press any key to continue"
     ;;
   esac
 done
