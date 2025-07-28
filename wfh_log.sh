@@ -35,7 +35,8 @@ start_log() {
   RESULT=$(sqlite3 $HOME/wfh_log.sqlite "$QUERY" 2>/dev/null)
   echo ""
   if [ "$RESULT" == "" ]; then
-    read -p "Enter a reason: " REASON
+    DFLTRSN="WFH $(date +%A)"
+    read -e -p "Enter a reason: " -i "$DFLTRSN" REASON
     STARTTIME=$(date +%s)
     # Round to the nearest 15 minutes
     REMAINDER=$(echo "$STARTTIME % 900" | bc)
