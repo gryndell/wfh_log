@@ -161,7 +161,7 @@ while true; do
   echo -e "${WHITE}D. Delete the latest log entry${RCOL}"
   echo -e "${WHITE}M. Modify latest start time${RCOL}"
   echo -e "${WHITE}E. Modify latest finish time${RCOL}"
-  echo -e "${WHITE}X. Export Previous Fiscal Year to CSV${RCOL}"
+  echo -e "${WHITE}X. Export Data for Previous Fiscal Year${RCOL}"
   echo -e "${WHITE}Q. Quit${RCOL}"
   echo ""
   read -n1 -s -p "Choice: " CHOICE
